@@ -96,10 +96,29 @@ if __name__ == "__main__":
         loaded_model.save(model_path)
         print(f"Model saved to {model_path} in {time.time() - start_time:.2f} seconds.")
 
+    # Convert the model to TFLite format
+    converter = tf.lite.TFLiteConverter.from_keras_model(loaded_model)
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    tflite_model = converter.convert()
+
+    with open("model.tflite", "wb") as f:
+        f.write(tflite_model)
+
+    interpreter = tf.lite.Interpreter(model_path="model.tflite")
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    interpreter.set_tensor(input_details[0]['index'], mfcc_list[1].reshape(1, 13, 32))
+    interpreter.invoke()
+    output = interpreter.get_tensor(output_details[0]['index'])
+    print("TFLite model output:", output)
+
     # Predict using the loaded model
-    pred_start = time.time()
-    predictions = loaded_model.predict(mfcc_list[0].reshape(1, 13, 32))  # Reshape to match input shape
-    print(f"Prediction time: {time.time() - pred_start:.2f} seconds.")
-    print("Predictions:", predictions)
-    predicted_classes = np.argmax(predictions, axis=1)
-    print("Predicted classes:", predicted_classes)
+    # pred_start = time.time()
+    # predictions = loaded_model.predict(mfcc_list[0].reshape(1, 13, 32))  # Reshape to match input shape
+    # print(f"Prediction time: {time.time() - pred_start:.2f} seconds.")
+    # print("Predictions:", predictions)
+    # predicted_classes = np.argmax(predictions, axis=1)
+    # print("Predicted classes:", predicted_classes)
